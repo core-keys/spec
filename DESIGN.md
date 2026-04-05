@@ -33,21 +33,45 @@ sources): https://claude.ai/code/artifact/5ddf7edd-81d9-4d79-a77f-949662b43455
   story). Final target per study: nRF52840 or STM32U5 + NXP SE050 + 128×64
   OLED + button.
 
+## Co-authorization protocol decisions (2026-08-28 — docs/coauth-protocol.md)
+
+Settled after an adversarial review that broke the first draft (4 critical, 7
+high findings, all fixed). Decisions:
+- **CA-D1**: co-authorization is the AUTHENTICATED IN-SESSION Noise message, not
+  a detached daemon signature over the to-be-signed bytes (the daemon never signs
+  RP-/server-controlled bytes).
+- **CA-D2**: SEPARATE keys — an X25519 Noise static from an ECDH-only handle,
+  distinct from any Ed25519 credential/identity key.
+- **CA-D3**: ship C (co-authorization) first; freeze architecture-B's interface
+  (`UNLOCK{wrap_share}` + HKDF + teardown) now, implement wrapping later.
+- **CA-D4**: implement SSH (daemon-initiated) co-auth first, FIDO2 second.
+- Pairing = commit-reveal SAS (24-bit / 6 digits) + a device-local enroll gesture
+  + proof-of-possession before pinning; adding an Nth desktop needs an existing
+  daemon's approval. Honest non-goal: the SAS assumes a trusted host at pairing
+  time (the host draws the code you compare against).
+
 ## Architecture (v1 = C+B, v2 adds A-for-SSH)
 
 - Device is a standard USB CTAP2.1 authenticator (TLC-1, usage page 0xF1D0)
   and the backend of a custom ssh-agent. Second HID collection (TLC-2, vendor
-  0xFF00) carries a Noise channel with statics pinned at pairing — the vendor
-  channel is reachable by any local process, so every message is authenticated;
-  the channel trusts cryptography, never the OS.
-- Firmware signs only when the request carries a fresh desktop co-authorization
-  signature over the exact to-be-signed bytes + a device-issued single-use
-  nonce, and the user presses the button after the display:
-  - FIDO2: desktop signs (rpIdHash ‖ clientDataHash ‖ device_nonce ‖ flags);
-    device constructs authenticatorData itself; display shows rpId.
-  - SSH: desktop signs the exact userauth/SSHSIG blob; firmware enforces a
-    strict three-shape parser (RFC 4252 blob | publickey-hostbound blob |
-    SSHSIG with allowed namespace) and refuses all other bytes.
+  0xFF00) carries a Noise_KK channel with X25519 statics pinned at pairing. The
+  vendor channel is reachable by any local process; only what is inside an
+  established Noise session (or the SAS+button-gated pairing frames) is trusted —
+  NO plaintext frame may change device state. (M2 review reclassified the M1
+  mule's plaintext reboot/status frames as a critical vuln; see coauth-protocol
+  §11 — mule keeps the reflash hatch behind a dev flag + BOOT hold, production
+  removes it.) Full protocol: docs/coauth-protocol.md.
+- Firmware signs only when it has an AUTHENTICATED IN-SESSION request from the
+  paired desktop over the exact to-be-signed bytes, plus a button press after
+  the display. Co-authorization is the Noise session itself, NOT a detached
+  signature (decision D1, 2026-08-28) — the daemon never signs RP-/server-
+  controlled bytes.
+  - FIDO2 (device-initiated): device builds authenticatorData, asks the daemon
+    to APPROVE over the session, shows rpId, button, signs.
+  - SSH (daemon-initiated): daemon (the ssh-agent) sends the exact userauth blob
+    over the session; firmware runs a strict three-shape parser (RFC 4252 |
+    publickey-hostbound | SSHSIG allowed-namespace), checks the hostbound host
+    key, shows user@nickname, button, signs.
 - SSH destination display is *verified*, not asserted: prefer
   publickey-hostbound-v00@openssh.com (server host key inside signed bytes,
   OpenSSH ≥ 8.9) and require a verified session-bind@openssh.com binding
