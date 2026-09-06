@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/banner.png" alt="core-keys — split-key authenticator · spec" width="800">
+</p>
+
 # core-keys spec
 
 The two documents that are the **source of truth** for
