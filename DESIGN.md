@@ -142,8 +142,8 @@ nRF52840 firmware).
 - **Reflash escape hatch:** the running mule accepts a 4-byte magic
   (`C0 DE B0 07`) on the vendor HID channel and reboots into ROM serial-download
   mode. Handled in the USB-driver task (`ck_usb_rx_enqueue`), so it survives a
-  hung worker task. Run `tools/reboot-to-download.py` (needs `pip install
-  hidapi`).
+  hung worker task. Run `tools/reboot-to-download.py` in
+  core-keys/mule-esp32s3 (needs `pip install hidapi`).
 - **The reflash gotcha (important):** esptool's reset over this board's
   USB-Serial-JTAG keeps landing in the bootloader instead of running the app
   (DTR->GPIO0 polarity + the USB link resetting itself). After flashing, the
@@ -151,7 +151,8 @@ nRF52840 firmware).
   replug). So the loop is: `reboot-to-download.py` -> flash -> power-cycle.
   Improving the software run-reset is a TODO (try the esptool USB-JTAG reset
   class / correct DTR polarity) to make iteration fully hands-free.
-- Font is generated from a system TTF by `tools/gen_font.py` (Menlo 13px ->
-  `main/font8x16.h`); regenerate if the glyphs need changing.
+- Font is generated from a system TTF by `tools/gen_font.py` in
+  core-keys/mule-esp32s3 (Menlo 13px -> `main/font8x16.h`); regenerate if the
+  glyphs need changing.
 - The "ESP32S3_DEV" port (`/dev/cu.usbmodemC04E30126AE43`) is a DIFFERENT USB
   device, not this board — ignore it.
