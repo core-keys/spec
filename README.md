@@ -37,7 +37,7 @@ Two sections are worth knowing before reading any implementation:
 | [protocol](https://github.com/core-keys/protocol) | `corekeys-protocol`, the shared `no_std` wire crate |
 | [daemon](https://github.com/core-keys/daemon) | `corekeys-daemon`, the desktop ssh-agent front end and Noise session owner |
 | [mule-esp32s3](https://github.com/core-keys/mule-esp32s3) | ESP-IDF firmware for the protocol mule (LilyGO T-Display-S3) |
-| [case-tdisplay-s3](https://github.com/core-keys/case-tdisplay-s3) | slide-in 3D-printed case for the board |
+| [mechanical](https://github.com/core-keys/mechanical) | 3D-printed enclosures for the boards |
 
 ## License
 
